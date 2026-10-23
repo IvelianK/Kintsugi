@@ -1,0 +1,19 @@
+# Arranque con la imagen publicada:
+#   docker compose -f deploy/docker-compose.yml up -d
+# Demo en http://localhost:8080. Variables opcionales:
+#   DEMO_PORT   puerto del host (8080)
+#   DEMO_BIND   interfaz del host (127.0.0.1; pon 0.0.0.0 solo si no hay proxy delante)
+#   DEMO_IMAGE  imagen a usar (la publicada; o una local, ver deploy/README.md)
+services:
+  demo:
+    image: ${DEMO_IMAGE:-ghcr.io/iveliank/kintsugi-demo:latest}
+    ports:
+      - "${DEMO_BIND:-127.0.0.1}:${DEMO_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

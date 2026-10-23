@@ -1,0 +1,77 @@
+name: Demo
+
+# Publica la demo como paquete de contenedor en GitHub Packages (ghcr.io) cuando
+# cambia en main, y en cada etiqueta de versión adjunta además un zip a la release.
+on:
+  push:
+    branches: [main]
+    paths: [demo/**, deploy/**, .dockerignore, .github/workflows/demo-image.yml]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  imagen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # El Dockerfile no ejecuta nada (solo COPY): buildx genera amd64 y arm64 sin emulación
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/kintsugi-demo
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,format=short
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  zip:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Empaquetar
+        run: |
+          nombre="kintsugi-demo-${GITHUB_REF_NAME}"
+          mkdir "$nombre"
+          cp -r demo deploy LICENSE "$nombre"/
+          zip -r "$nombre.zip" "$nombre"
+
+      - name: Adjuntar a la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" "kintsugi-demo-${GITHUB_REF_NAME}.zip" --clobber

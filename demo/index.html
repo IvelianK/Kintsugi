@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kintsugi · demo</title>
+<meta name="description" content="Demo navegable de una plataforma de gestión de servicio técnico de campo, con datos inventados.">
+<meta name="color-scheme" content="light dark">
+<!-- GitHub Pages no admite cabeceras: la CSP viaja también aquí. En el contenedor llega además por cabecera. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23221f1a'/%3E%3Cpath d='M7 9l7 6-3 4 6 4 3 4' stroke='%23d9ad55' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script src="theme.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M7 9l7 6-3 4 6 4 3 4" stroke="#d9ad55" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+    <span>Kintsugi <small>demo con datos inventados</small></span>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button role="tab" data-tab="panel" aria-selected="true">Panel</button>
+    <button role="tab" data-tab="ordenes" aria-selected="false">Órdenes</button>
+    <button role="tab" data-tab="calendario" aria-selected="false">Calendario</button>
+    <button role="tab" data-tab="nominas" aria-selected="false">Nóminas</button>
+    <button role="tab" data-tab="roles" aria-selected="false">Roles</button>
+    <button role="tab" data-tab="auditoria" aria-selected="false">Auditoría</button>
+    <button role="tab" data-tab="despliegue" aria-selected="false">Despliegue</button>
+  </nav>
+  <div class="tools">
+    <label class="sr" for="rol">Ver como</label>
+    <select id="rol" title="Cambia de perfil para ver cómo cambian datos y permisos"></select>
+    <button class="icon-btn" id="tema" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section id="panel" role="tabpanel">
+    <div class="head">
+      <div><div class="eyebrow" id="saludoFecha"></div><h1 id="saludo">Buenos días</h1>
+      <p class="lead">Cambia de perfil arriba a la derecha. Indicadores, órdenes visibles y acciones cambian igual que en el sistema real, donde lo decide la API y no solo la pantalla.</p></div>
+      <button class="btn primary" data-accion="nueva">Nueva orden <kbd>N</kbd></button>
+    </div>
+    <div class="grid kpis" id="kpis"></div>
+    <div class="grid cols-2">
+      <div class="card"><h2>Órdenes por día</h2><svg class="chart" id="chart" role="img" aria-label="Órdenes por día de la semana"></svg></div>
+      <div class="card"><h2>Carga por persona</h2><div class="carga" id="carga"></div></div>
+    </div>
+    <div class="grid cols-2 mt" id="filaPanel">
+      <div class="card"><h2>Próximas órdenes</h2><div id="proximas"></div></div>
+      <div class="card"><h2>Actividad reciente</h2><ul class="feed" id="feed"></ul></div>
+    </div>
+  </section>
+
+  <section id="ordenes" role="tabpanel" hidden>
+    <div class="head">
+      <div><div class="eyebrow">Operaciones</div><h1>Órdenes de trabajo</h1>
+      <p class="lead">Haz clic en una orden. Las acciones dependen del permiso de tu perfil y de si la orden está dentro de tu alcance.</p></div>
+      <button class="btn primary" data-accion="nueva">Nueva orden <kbd>N</kbd></button>
+    </div>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Buscar cliente, sede o número" aria-label="Buscar">
+      <kbd title="Pulsa / para buscar">/</kbd>
+      <select id="fTec" aria-label="Técnico"></select>
+    </div>
+    <div class="toolbar chips" id="fEstado" role="group" aria-label="Filtrar por estado"></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nº</th><th>Fecha</th><th>Cliente</th><th>Sede</th><th>Técnico</th><th>Estado</th></tr></thead>
+      <tbody id="tabla"></tbody>
+    </table></div>
+    <p class="hint" id="cuenta"></p>
+  </section>
+
+  <section id="calendario" role="tabpanel" hidden>
+    <div class="head">
+      <div><div class="eyebrow">Planificación</div><h1>Calendario</h1>
+      <p class="lead">Las ausencias se ven dentro del calendario de trabajo. Si alguien tiene una orden abierta un día que está de vacaciones, la celda se marca y salta un aviso.</p></div>
+      <div class="cal-nav">
+        <button class="btn sm" id="semAnt" aria-label="Semana anterior">←</button>
+        <span class="mono" id="semTxt"></span>
+        <button class="btn sm" id="semSig" aria-label="Semana siguiente">→</button>
+        <button class="btn sm ghost" id="semHoy">Hoy</button>
+      </div>
+    </div>
+    <div id="avisos"></div>
+    <div class="table-wrap"><div class="cal" id="cal"></div></div>
+  </section>
+
+  <section id="nominas" role="tabpanel" hidden>
+    <div class="head">
+      <div><div class="eyebrow">Personas</div><h1>Nóminas</h1>
+      <p class="lead" id="nomLead"></p></div>
+      <button class="btn primary" id="subirNominas">Subir PDF de la plantilla</button>
+    </div>
+    <div id="nomContenido"></div>
+  </section>
+
+  <section id="roles" role="tabpanel" hidden>
+    <div class="head">
+      <div><div class="eyebrow">Control</div><h1>Roles y permisos</h1>
+      <p class="lead">Cada rol es un conjunto de permisos con nombre más un alcance. El alcance decide qué datos ves; el permiso, qué puedes hacer con ellos.</p></div>
+    </div>
+    <div class="table-wrap"><table class="matriz" id="matriz"></table></div>
+  </section>
+
+  <section id="auditoria" role="tabpanel" hidden>
+    <div class="head">
+      <div><div class="eyebrow">Control</div><h1>Auditoría encadenada</h1>
+      <p class="lead">Cada acción guarda el hash SHA-256 de la anterior. Manipula una fila "por debajo", como si alguien editara la base de datos, y verifica la cadena.</p></div>
+    </div>
+    <div id="audContenido"></div>
+  </section>
+
+  <section id="despliegue" role="tabpanel" hidden>
+    <div class="head">
+      <div><div class="eyebrow">Entrega</div><h1>Despliegue</h1>
+      <p class="lead">La imagen se construye una vez y se promueve por etiqueta: el identificador no cambia al pasar a preproducción y producción. Las migraciones se aplican solas al arrancar.</p></div>
+    </div>
+    <div class="grid envs" id="envs"></div>
+    <div class="pasos" id="pasos"></div>
+    <div class="toolbar">
+      <button class="btn primary" id="push">Push a staging</button>
+      <button class="btn" id="prBeta">PR staging → beta</button>
+      <button class="btn" id="prMain">PR beta → main</button>
+    </div>
+    <div class="log" id="log" aria-live="polite"></div>
+  </section>
+</main>
+
+<dialog id="dlgOrden" aria-labelledby="dlgOrdenTit"></dialog>
+<dialog id="dlgNueva" aria-labelledby="dlgNuevaTit"></dialog>
+<dialog id="dlgParte" aria-labelledby="dlgParteTit"></dialog>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<footer>Maqueta sin backend. Personas, clientes y datos son inventados. Recarga para empezar de cero.</footer>
+<script src="app.js"></script>
+</body>
+</html>
