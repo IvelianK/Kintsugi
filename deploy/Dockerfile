@@ -1,7 +1,7 @@
 # Imagen de la demo: nginx sin privilegios sirviendo ficheros estáticos.
 # Construir desde la raíz del repositorio:
 #   docker build -f deploy/Dockerfile -t kintsugi-demo .
-FROM nginxinc/nginx-unprivileged:1.30.6-alpine
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine
 
 LABEL org.opencontainers.image.title="kintsugi-demo" \
       org.opencontainers.image.description="Demo navegable de una plataforma de gestión de servicio técnico de campo" \
