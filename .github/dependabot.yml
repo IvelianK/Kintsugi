@@ -11,10 +11,15 @@ updates:
     commit-message:
       prefix: ci
 
-  # Imagen base de nginx del Dockerfile de la demo
+  # Imagen base de nginx del Dockerfile de la demo. En nginx el número menor impar es la rama
+  # mainline (1.31) y el par la estable (1.30): solo se aceptan parches dentro de la estable.
+  # El salto a la siguiente estable (1.32) se hace a mano.
   - package-ecosystem: docker
     directory: /deploy
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: nginxinc/nginx-unprivileged
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
       prefix: deploy
