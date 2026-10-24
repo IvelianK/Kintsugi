@@ -1,0 +1,104 @@
+name: Demo
+
+# En cada Pull Request construye la imagen para comprobar que compila, sin publicarla. Corre en
+# todos los PR (sin filtro de rutas) porque es un check obligatorio de la rama main.
+# En main publica la imagen en GitHub Packages (ghcr.io), y en cada etiqueta de versión
+# adjunta además un zip a la release.
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: [demo/**, deploy/**, .dockerignore, .github/workflows/demo-image.yml]
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Ningún permiso por defecto: cada trabajo pide solo lo que necesita
+permissions: {}
+
+concurrency:
+  group: demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  imagen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      PUBLICAR: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # El Dockerfile no ejecuta nada (solo COPY): buildx genera amd64 y arm64 sin emulación
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - if: env.PUBLICAR == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/kintsugi-demo
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,format=short
+
+      - id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: ${{ env.PUBLICAR == 'true' }}
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Atestación firmada de procedencia: cualquiera puede comprobar que la imagen sale de este repo
+      # con `gh attestation verify oci://ghcr.io/iveliank/kintsugi-demo:<etiqueta> -R IvelianK/Kintsugi`
+      - if: env.PUBLICAR == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/kintsugi-demo
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  zip:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Empaquetar
+        run: |
+          nombre="kintsugi-demo-${GITHUB_REF_NAME}"
+          mkdir "$nombre"
+          cp -r demo deploy LICENSE "$nombre"/
+          zip -r "$nombre.zip" "$nombre"
+
+      - name: Adjuntar a la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          fi
+          gh release upload "$GITHUB_REF_NAME" "kintsugi-demo-${GITHUB_REF_NAME}.zip" --clobber

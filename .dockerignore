@@ -1,0 +1,4 @@
+# El contexto de la imagen solo necesita la demo y la config de nginx
+*
+!demo/
+!deploy/nginx.conf

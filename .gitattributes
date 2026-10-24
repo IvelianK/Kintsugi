@@ -1,0 +1,5 @@
+# Linguist trata las carpetas demo/ como documentación y no las cuenta como código.
+# Aquí la demo es código de verdad: así aparece en los lenguajes del repo y CodeQL la analiza.
+demo/** linguist-documentation=false
+
+* text=auto eol=lf

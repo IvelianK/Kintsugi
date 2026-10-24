@@ -1,0 +1,11 @@
+name: Pregunta o sugerencia
+description: Una duda sobre una decisión o una idea para la documentación o la demo
+labels: [pregunta]
+body:
+  - type: textarea
+    id: pregunta
+    attributes:
+      label: Tu pregunta o sugerencia
+      description: Si es sobre una decisión, enlaza el ADR o el capítulo.
+    validations:
+      required: true
