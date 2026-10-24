@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # Acciones del workflow, fijadas por SHA: Dependabot actualiza el SHA y el comentario de versión
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      acciones:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+
+  # Imagen base de nginx del Dockerfile de la demo
+  - package-ecosystem: docker
+    directory: /deploy
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: deploy

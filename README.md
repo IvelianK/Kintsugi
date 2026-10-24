@@ -128,6 +128,10 @@ El paquete incluye `Dockerfile` con nginx sin privilegios y CSP estricta, `docke
 
 Diseñado, construido y mantenido por [Ivelian](https://github.com/IvelianK).
 
+## Seguridad
+
+Para informar de una vulnerabilidad, usa el aviso privado descrito en [SECURITY.md](SECURITY.md). Ahí están también las medidas activas en el repositorio y cómo verificar la procedencia de la imagen.
+
 ## Licencia
 
 Documentación bajo [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.es). Código de la demo y del despliegue bajo MIT. Detalle en [LICENSE](LICENSE).
