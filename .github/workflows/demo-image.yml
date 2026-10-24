@@ -1,11 +1,11 @@
 name: Demo
 
-# En cada Pull Request construye la imagen para comprobar que compila, sin publicarla.
+# En cada Pull Request construye la imagen para comprobar que compila, sin publicarla. Corre en
+# todos los PR (sin filtro de rutas) porque es un check obligatorio de la rama main.
 # En main publica la imagen en GitHub Packages (ghcr.io), y en cada etiqueta de versión
 # adjunta además un zip a la release.
 on:
   pull_request:
-    paths: [demo/**, deploy/**, .dockerignore, .github/workflows/demo-image.yml]
   push:
     branches: [main]
     paths: [demo/**, deploy/**, .dockerignore, .github/workflows/demo-image.yml]
